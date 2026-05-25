@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWST Chromatic Translation Discovery Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        /* State 1: Simulation Shroud of True Human Sight limitations in the Infrared Spectrum */
+        .invisible-shroud {
+            filter: brightness(0.01) contrast(3) blur(2px) !important;
+            mix-blend-mode: normal !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <script>
+        const API_BASE_URL = "http://localhost:8000";
+    </script>
+
+    <aside class="w-full md:w-1/4 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col gap-5 z-10 shadow-2xl overflow-y-auto">
+        <div>
+            <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 text-indigo-400">
+                <span class="material-symbols-outlined">rocket_launch</span>
+                JWST DISCOVERY ENGINE
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Real-time Deep Space Image Streamer</p>
+        </div>
+
+        <hr class="border-slate-800" />
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Unified Natural Search</label>
+            <div class="relative flex items-center">
+                <span class="material-symbols-outlined absolute left-3 text-slate-500">search</span>
+                <input id="search-input" type="text" placeholder="Search plasma, crimson, dawn..." 
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Phenonema Filters</label>
+            <div class="flex flex-wrap gap-1.5" id="semantic-chips">
+                <button data-keyword="Plasma" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">✨ Plasma</button>
+                <button data-keyword="Organic" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">💨 Organics</button>
+                <button data-keyword="Dawn" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">🌌 Primordial Dawn</button>
+                <button data-keyword="Infancy" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">🪐 Star Embryos</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Isolate Specific Dataset IDs</label>
+            <div id="obs-id-picker" class="max-h-36 overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-2 flex flex-col gap-1 text-xs">
+                <div class="text-slate-500 p-2 italic text-center animate-pulse">Syncing catalog inventory...</div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Instrument Configuration</label>
+            <div class="flex flex-wrap gap-2" id="instrument-chips">
+                <button data-value="" class="chip active px-4 py-2 text-xs font-medium rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 transition-all flex items-center gap-1">
+                    All Instruments
+                </button>
+                <button data-value="NIRCAM" class="chip px-4 py-2 text-xs font-medium rounded-full border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">NIRCam</button>
+                <button data-value="MIRI" class="chip px-4 py-2 text-xs font-medium rounded-full border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">MIRI</button>
+                <button data-value="NIRISS" class="chip px-4 py-2 text-xs font-medium rounded-full border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">NIRISS</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Min Exposure Depth</label>
+                <span id="exposure-val" class="text-xs font-mono text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">0s</span>
+            </div>
+            <input id="exposure-slider" type="range" min="0" max="5000" value="0" step="100" class="w-full accent-indigo-500 h-1.5 bg-slate-950 rounded-lg cursor-pointer appearance-none" />
+        </div>
+
+        <div class="mt-auto pt-4 border-t border-slate-800/50 flex flex-col gap-1 text-[11px] text-slate-500 font-mono">
+            <div>Engine Status: Operational</div>
+            <div>Visible Objects: <span id="stat-total">0</span></div>
+        </div>
+    </aside>
+
+    <main class="w-full md:w-3/4 p-6 overflow-y-auto h-screen flex flex-col gap-6">
+        <header class="flex justify-between items-center">
+            <h2 class="text-lg font-medium tracking-tight text-slate-200">Discovered Targets Matrix</h2>
+            <div id="loading-indicator" class="hidden text-xs font-mono text-indigo-400 flex items-center gap-2 animate-pulse">
+                <span class="inline-block w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span> Syncing Grid...
+            </div>
+        </header>
+        <div id="matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-12"></div>
+    </main>
+
+    <div id="viewer-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xl z-50 hidden flex flex-col justify-between select-none p-4 md:p-6 transition-all duration-300">
+        
+        <header class="bg-slate-900/60 backdrop-blur border border-slate-800/80 px-6 py-4 rounded-2xl flex flex-col lg:flex-row gap-4 justify-between items-center z-10 shadow-2xl">
+            <button id="close-modal-btn" class="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100 transition-colors font-medium self-start lg:self-auto">
+                <span class="material-symbols-outlined">arrow_back</span> Back to Grid
+            </button>
+            <div class="text-center max-w-xl px-2 flex-1">
+                <h3 id="modal-target-title" class="text-sm font-bold tracking-wide text-slate-100 uppercase truncate">TARGET ARCHIVE</h3>
+                <p id="modal-target-subtitle" class="text-xs text-indigo-400 font-mono mt-0.5 truncate">INSTRUMENT PARMS</p>
+                <p id="modal-target-proposal" class="text-[11px] text-slate-400 italic mt-0.5 truncate">PROPOSAL SUMMARY</p>
+            </div>
+            
+            <div class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs font-mono shrink-0 shadow-inner">
+                <button data-state="human" class="viewport-toggle px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">visibility_off</span> Human Eye
+                </button>
+                <button data-state="scientific" class="viewport-toggle px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">grid_view</span> Scientific B/W
+                </button>
+                <button data-state="chromatic" class="viewport-toggle active px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow-md transition-all flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">palette</span> Chromatic Glow
+                </button>
+            </div>
+        </header>
+
+        <div id="canvas-viewport" class="relative w-full flex-1 min-h-0 my-4 overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center rounded-2xl bg-black/20">
+            
+            <div id="canvas-loader" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/40 z-20 backdrop-blur-md rounded-2xl">
+                <div class="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                <div class="text-xs font-mono text-slate-300 tracking-widest animate-pulse">STREAMING FITS CHANNELS...</div>
+            </div>
+            
+            <div id="image-transform-wrapper" class="origin-center transition-transform duration-75 will-change-transform relative">
+                <div id="gpu-blend-tint" class="absolute inset-0 z-10 pointer-events-none rounded transition-colors duration-300 mix-blend-screen"></div>
+                <img id="modal-image-node" src="" alt="Live FITS Projection" class="max-h-[50vh] max-w-[80vw] md:max-h-[55vh] object-contain pointer-events-none shadow-2xl transition-all duration-300 rounded" />
+            </div>
+        </div>
+
+        <footer class="bg-slate-900/60 backdrop-blur border border-slate-800/80 p-5 rounded-2xl flex flex-col gap-4 z-10 shadow-2xl">
+            
+            <div id="modal-insight-banner" class="flex flex-col gap-1.5 text-center border-b border-slate-800/60 pb-3">
+                <span class="font-bold tracking-wider text-indigo-400 uppercase flex items-center justify-center gap-2 font-mono text-xs">
+                    <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    Spectrum Map: <span id="modal-filter-label" class="text-slate-200">Loading Lens...</span>
+                    <span id="modal-color-badge" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white transition-all">GRAY</span>
+                </span>
+
+                <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl px-4 py-2 mt-0.5 max-w-xl mx-auto flex items-center justify-center gap-2 text-indigo-300 font-medium text-[11px] md:text-xs">
+                    <span class="material-symbols-outlined text-base text-indigo-400">info</span>
+                    <span id="modal-color-interpretation">What this color represents...</span>
+                </div>
+
+                <p id="modal-filter-desc" class="text-slate-300 text-xs leading-relaxed italic max-w-3xl mx-auto line-clamp-2 md:line-clamp-none mt-1">Loading narrative matrix context...</p>
+                <p id="modal-why-color" class="text-[11px] text-slate-400 font-mono mt-1 max-w-3xl mx-auto opacity-90">Color logic initialization...</p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center w-full">
+                <div class="flex items-center gap-2">
+                    <button id="zoom-out-btn" class="flex p-2 rounded-lg bg-slate-950/60 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"><span class="material-symbols-outlined text-xl">zoom_out</span></button>
+                    <button id="zoom-in-btn" class="flex p-2 rounded-lg bg-slate-950/60 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"><span class="material-symbols-outlined text-xl">zoom_in</span></button>
+                    <button id="zoom-reset-btn" class="flex px-3 py-2 rounded-lg bg-slate-950/60 hover:bg-slate-800 text-xs font-mono border border-slate-800 transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm">restart_alt</span> RESET
+                    </button>
+                </div>
+                <div class="hidden lg:flex items-center gap-1 text-[11px] font-mono text-slate-400/70">
+                    <span class="material-symbols-outlined text-sm">info</span>
+                    Scroll wheel to Zoom. Click & drag canvas to Pan structures.
+                </div>
+                <a id="download-trigger-btn" href="#" target="_blank" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-medium text-xs tracking-wider uppercase text-slate-100 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+                    <span class="material-symbols-outlined text-sm">download</span> Download Original FITS PNG
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Static dictionary lookup mapping raw color channels directly into digestible interpretations
+        const COLOR_INTERPRETATIONS = {
+            "Crimson": "Interpretation: Star Light & Surface Outlines. Sitting right on the boundary edge of human vision.",
+            "Red": "Interpretation: Stellar Nurseries. Pierces local space dust to show actively hatching newborn star clusters.",
+            "Orange": "Interpretation: Galaxy Skeletons. Maps mature stellar distributions obscured by cosmic clouds.",
+            "Gold": "Interpretation: Thermal Boundaries. Tracks chemical gas limits and frozen moisture layers on remote moons.",
+            "Green": "Interpretation: Organic Space Soot. Highlights complex hydrocarbon clouds glowing under radiation.",
+            "Teal": "Interpretation: Shockwave Displacements. Isolates fields where interstellar wind crashes into empty space.",
+            "Cyan": "Interpretation: Planetary Envelopes. Isolates methane and heavy carbon bounds in cold atmospheres.",
+            "Cerulean": "Interpretation: Cosmic Dawn. Specifically tunes into the oldest, most distant galaxies in the universe.",
+            "Sapphire": "Interpretation: Ambient Heat. Highlights carbon dust blankets absorbing active starcluster energy.",
+            "Indigo": "Interpretation: Searing Supernova Shockwaves. Maps silicate mineral streams and highly ionized plasma.",
+            "Violet": "Interpretation: Thermal Incubators. Deep star embryos cocooned in thick columns.",
+            "Magenta": "Interpretation: Cryogenic Freezing Void. Unveils cold asteroid tracks and cometary dust trails."
+        };
+
+        let state = { search: '', instrument: '', minExposure: 0, selectedObsIds: [], allRecordsCache: [], currentViewportState: 'chromatic', activeHex: '#FFFFFF', activeColorName: 'Grayscale' };
+        let transformState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
+
+        const elements = {
+            searchInput: document.getElementById('search-input'), semanticChips: document.getElementById('semantic-chips'), obsIdPicker: document.getElementById('obs-id-picker'), instrumentChips: document.getElementById('instrument-chips'), exposureSlider: document.getElementById('exposure-slider'), exposureVal: document.getElementById('exposure-val'), matrixGrid: document.getElementById('matrix-grid'), loader: document.getElementById('loading-indicator'), statTotal: document.getElementById('stat-total'),
+            modal: document.getElementById('viewer-modal'), closeModal: document.getElementById('close-modal-btn'), modalTitle: document.getElementById('modal-target-title'), modalSubtitle: document.getElementById('modal-target-subtitle'), modalProposal: document.getElementById('modal-target-proposal'), modalFilterLabel: document.getElementById('modal-filter-label'), modalFilterDesc: document.getElementById('modal-filter-desc'), modalWhyColor: document.getElementById('modal-why-color'), modalColorBadge: document.getElementById('modal-color-badge'), modalColorInterpretation: document.getElementById('modal-color-interpretation'), gpuTint: document.getElementById('gpu-blend-tint'), modalImage: document.getElementById('modal-image-node'), canvasViewport: document.getElementById('canvas-viewport'), transformWrapper: document.getElementById('image-transform-wrapper'), canvasLoader: document.getElementById('canvas-loader'), downloadBtn: document.getElementById('download-trigger-btn'), zoomIn: document.getElementById('zoom-in-btn'), zoomOut: document.getElementById('zoom-out-btn'), zoomReset: document.getElementById('zoom-reset-btn')
+        };
+
+        function injectSkeletonPlaceholders() {
+            elements.matrixGrid.innerHTML = '';
+            for(let i = 0; i < 6; i++) {
+                elements.matrixGrid.insertAdjacentHTML('beforeend', `
+                    <div class="bg-slate-900 border border-slate-800/60 rounded-2xl p-5 flex flex-col gap-4 animate-pulse">
+                        <div class="flex justify-between items-start"><div class="space-y-2 w-2/3"><div class="h-4 bg-slate-800 rounded"></div><div class="h-3 bg-slate-800 rounded w-1/2"></div></div><div class="h-5 bg-slate-800 rounded-full w-12"></div></div>
+                        <div class="h-7 bg-slate-800/30 rounded-xl w-full"></div><div class="h-10 bg-slate-800/40 rounded-xl w-full"></div>
+                    </div>
+                `);
+            }
+        }
+
+        async function loadInventoryPicker() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/obs-inventory`);
+                const items = await response.json();
+                elements.obsIdPicker.innerHTML = '';
+                items.forEach(item => {
+                    elements.obsIdPicker.insertAdjacentHTML('beforeend', `
+                        <label class="flex items-start gap-2 p-1.5 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors text-slate-300">
+                            <input type="checkbox" value="${item.obs_id}" class="obs-checkbox mt-0.5 accent-indigo-500 rounded bg-slate-900" />
+                            <div class="flex flex-col min-w-0"><span class="font-mono text-[11px] text-indigo-400 truncate">${item.obs_id}</span><span class="text-[10px] font-bold text-slate-400 truncate">${item.target_name}</span></div>
+                        </label>
+                    `);
+                });
+                elements.obsIdPicker.querySelectorAll('.obs-checkbox').forEach(box => {
+                    box.addEventListener('change', () => {
+                        state.selectedObsIds = Array.from(elements.obsIdPicker.querySelectorAll('.obs-checkbox:checked')).map(cb => cb.value);
+                        injectSkeletonPlaceholders(); fetchObservationMatrix();
+                    });
+                });
+            } catch (err) { elements.obsIdPicker.innerHTML = '<div class="text-rose-500/70 p-2 text-center text-[11px]">Failed inventory map.</div>'; }
+        }
+
+        async function fetchObservationMatrix() {
+            elements.loader.classList.remove('hidden');
+            const params = new URLSearchParams({ limit: 100, offset: 0 });
+            if (state.search) params.append('search', state.search);
+            if (state.instrument) params.append('instrument', state.instrument);
+            if (state.selectedObsIds.length > 0) state.selectedObsIds.forEach(id => params.append('obs_id', id));
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/observations?${params.toString()}`);
+                const data = await response.json();
+                state.allRecordsCache = data.results || [];
+                renderFilteredMatrix();
+            } catch (error) { elements.matrixGrid.innerHTML = '<div class="col-span-full py-12 text-center text-slate-500">Failed to resolve server nodes.</div>'; }
+            elements.loader.classList.add('hidden');
+        }
+
+        function renderFilteredMatrix() {
+            const filtered = state.allRecordsCache.filter(item => item.exposure_time >= state.minExposure);
+            elements.statTotal.innerText = filtered.length;
+            if (filtered.length === 0) { elements.matrixGrid.innerHTML = '<div class="col-span-full py-16 text-center text-slate-500 text-xs font-mono">No parameters match target fields.</div>'; return; }
+
+            elements.matrixGrid.innerHTML = '';
+            filtered.forEach(obs => {
+                const hexColor = obs.primary_color_hex || '#FFFFFF';
+                const colorName = obs.primary_color_name || 'Grayscale';
+                const humanLabel = obs.filter_human_label || `Infrared (${obs.filters})`;
+
+                elements.matrixGrid.insertAdjacentHTML('beforeend', `
+                    <div class="group bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30 rounded-2xl p-5 flex flex-col justify-between gap-3 transition-all hover:shadow-xl cursor-pointer" onclick="launchExpandedViewer('${obs.obs_id}')">
+                        <div class="flex justify-between items-start gap-3">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="font-bold text-slate-100 group-hover:text-indigo-400 transition-colors truncate">${obs.target_name}</h3>
+                                <p class="text-[10px] text-indigo-400 font-mono tracking-tight uppercase truncate">${obs.target_classification}</p>
+                            </div>
+                            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border border-slate-700 bg-slate-950 text-slate-400 shrink-0">${obs.instrument_name.split('/')[0]}</span>
+                        </div>
+                        
+                        <div class="text-[11px] font-medium bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <span class="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10" style="background-color: ${hexColor}"></span>
+                                <span class="truncate">${humanLabel}</span>
+                            </div>
+                            <span class="text-[9px] font-mono font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800/50">${colorName}</span>
+                        </div>
+
+                        <p class="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">"${obs.observation_title}"</p>
+                        
+                        <div class="mt-1 w-full py-2 bg-slate-950 group-hover:bg-indigo-600 rounded-xl text-center text-[11px] font-medium tracking-wider uppercase text-slate-400 group-hover:text-white transition-all flex items-center justify-center gap-1.5 border border-slate-800">
+                            <span class="material-symbols-outlined text-sm">visibility</span> Inspect Viewports
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function launchExpandedViewer(obsId) {
+            const obs = state.allRecordsCache.find(o => o.obs_id === obsId);
+            if (!obs) return;
+
+            document.body.classList.add('overflow-hidden');
+            elements.modalTitle.innerText = obs.target_name;
+            elements.modalSubtitle.innerText = `${obs.target_classification} • Instrument: ${obs.instrument_name} • Bands: ${obs.filters}`;
+            elements.modalProposal.innerText = `Investigation: ${obs.observation_title}`;
+            
+            state.activeHex = obs.primary_color_hex || '#FFFFFF';
+            state.activeColorName = obs.primary_color_name || 'Grayscale';
+            elements.modalFilterLabel.innerText = obs.filter_human_label || `Infrared Spectrum (${obs.filters})`;
+            elements.modalFilterDesc.innerText = obs.impact_description || "Specialized space light filtration data array layer.";
+            
+            elements.downloadBtn.href = `${API_BASE_URL}/api/stream/${obsId}?download=true`;
+            resetMatrixTransforms();
+            elements.canvasLoader.classList.remove('hidden');
+            elements.modal.classList.remove('hidden');
+            
+            updateViewportRenderingState('chromatic');
+            
+            elements.modalImage.src = `${API_BASE_URL}/api/stream/${obsId}`;
+            elements.modalImage.onload = () => { elements.canvasLoader.classList.add('hidden'); };
+            elements.modalImage.onerror = () => { if (!elements.modalImage.src) return; alert("Error loading FITS stream matrix."); elements.canvasLoader.classList.add('hidden'); };
+        }
+
+        function updateViewportRenderingState(targetState) {
+            state.currentViewportState = targetState;
+            
+            document.querySelectorAll('.viewport-toggle').forEach(btn => {
+                btn.className = "viewport-toggle px-3 py-1.5 rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center gap-1";
+            });
+            const activeBtn = document.querySelector(`.viewport-toggle[data-state="${targetState}"]`);
+            if (activeBtn) activeBtn.className = "viewport-toggle active px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium shadow-md transition-all flex items-center gap-1";
+
+            elements.modalImage.classList.remove('invisible-shroud');
+            elements.gpuTint.style.backgroundColor = 'transparent';
+            elements.modalColorBadge.style.backgroundColor = '#475569';
+            elements.modalColorBadge.innerText = 'GRAY';
+
+            if (targetState === 'human') {
+                elements.modalImage.classList.add('invisible-shroud');
+                elements.modalColorBadge.style.backgroundColor = '#020617';
+                elements.modalColorBadge.innerText = 'INVISIBLE';
+                elements.modalColorInterpretation.innerText = "Switch to 'Chromatic Glow' to access chemical interpretation maps.";
+                elements.modalWhyColor.innerText = "🛑 Human Eye Perspective: Because the human retina lacks cells sensitive to wavelengths longer than 0.78 microns, this deep-space structure appears entirely pitch black and completely invisible to an astronaut.";
+            } 
+            else if (targetState === 'scientific') {
+                elements.modalColorInterpretation.innerText = "Switch to 'Chromatic Glow' to access chemical interpretation maps.";
+                elements.modalWhyColor.innerText = "🔬 Scientific Intensity Map: Computers do not read color—they read math. This baseline view maps photon count values straight to pixel brightness levels, tracking structural density with absolute precision.";
+            } 
+            else if (targetState === 'chromatic') {
+                elements.gpuTint.style.backgroundColor = state.activeHex;
+                elements.modalColorBadge.style.backgroundColor = state.activeHex;
+                elements.modalColorBadge.innerText = state.activeColorName;
+                
+                // Inject clean static interpretation text on demand
+                elements.modalColorInterpretation.innerText = COLOR_INTERPRETATIONS[state.activeColorName] || "Interpretation: Custom data layer mapping infrared frequencies.";
+                
+                // ✅ FIXED: Rogue elements.whyColor reference successfully removed to resolve runtime crashes
+                elements.modalWhyColor.innerText = `🎨 Chromatic Translation: To expose this invisible light to human eyes, the data has been transformed into a hardware-accelerated monochromatic ${state.activeColorName} spectrum glow based directly on its specific physical position within cosmic energy fields.`;
+            }
+        }
+
+        function resetMatrixTransforms() { transformState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 }; applyCanvasMatrixCSS(); }
+        function applyCanvasMatrixCSS() { elements.transformWrapper.style.transform = `translate(${transformState.x}px, ${transformState.y}px) scale(${transformState.scale})`; }
+
+        function setupInteractionListeners() {
+            let debounceTimeout;
+            elements.searchInput.addEventListener('input', (e) => {
+                state.search = e.target.value;
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => { injectSkeletonPlaceholders(); fetchObservationMatrix(); }, 350);
+            });
+
+            elements.semanticChips.addEventListener('click', (e) => {
+                const targetBtn = e.target.closest('button'); if (!targetBtn) return;
+                const keyword = targetBtn.getAttribute('data-keyword');
+                if (elements.searchInput.value === keyword) { elements.searchInput.value = ""; state.search = ""; targetBtn.className = "px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 transition-all"; } 
+                else {
+                    elements.semanticChips.querySelectorAll('button').forEach(btn => btn.className = "px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 transition-all");
+                    elements.searchInput.value = keyword; state.search = keyword;
+                    targetBtn.className = "px-2.5 py-1 text-[11px] font-mono rounded-lg border border-indigo-500 bg-indigo-500/10 text-indigo-400 transition-all";
+                }
+                injectSkeletonPlaceholders(); fetchObservationMatrix();
+            });
+
+            document.querySelectorAll('.viewport-toggle').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetState = e.target.closest('button').getAttribute('data-state');
+                    updateViewportRenderingState(targetState);
+                });
+            });
+
+            elements.instrumentChips.addEventListener('click', (e) => {
+                const targetButton = e.target.closest('button'); if (!targetButton) return;
+                document.querySelectorAll('#instrument-chips button').forEach(btn => btn.className = "chip px-4 py-2 text-xs font-medium rounded-full border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all");
+                targetButton.className = "chip active px-4 py-2 text-xs font-medium rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 transition-all";
+                state.instrument = targetButton.getAttribute('data-value');
+                injectSkeletonPlaceholders(); fetchObservationMatrix();
+            });
+
+            elements.exposureSlider.addEventListener('input', (e) => { state.minExposure = parseInt(e.target.value); elements.exposureVal.innerText = `${state.minExposure}s`; renderFilteredMatrix(); });
+            elements.closeModal.addEventListener('click', () => { elements.modal.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); elements.modalImage.onload = null; elements.modalImage.onerror = null; elements.modalImage.src = ""; });
+
+            // ZOOM/PAN MOUSE LOGIC
+            elements.canvasViewport.addEventListener('wheel', (e) => { e.preventDefault(); const newScale = transformState.scale + (e.deltaY < 0 ? 1 : -1) * 0.12 * transformState.scale; transformState.scale = Math.min(Math.max(newScale, 0.4), 12); applyCanvasMatrixCSS(); }, { passive: false });
+            elements.canvasViewport.addEventListener('mousedown', (e) => { if (!elements.canvasLoader.classList.contains('hidden')) return; transformState.isDragging = true; transformState.startX = e.clientX - transformState.x; transformState.startY = e.clientY - transformState.y; });
+            window.addEventListener('mousemove', (e) => { if (!transformState.isDragging) return; transformState.x = e.clientX - transformState.startX; transformState.y = e.clientY - transformState.startY; applyCanvasMatrixCSS(); });
+            window.addEventListener('mouseup', () => { transformState.isDragging = false; });
+            elements.zoomIn.addEventListener('click', () => { transformState.scale = Math.min(transformState.scale * 1.3, 12); applyCanvasMatrixCSS(); });
+            elements.zoomOut.addEventListener('click', () => { transformState.scale = Math.max(transformState.scale / 1.3, 0.4); applyCanvasMatrixCSS(); });
+            elements.zoomReset.addEventListener('click', resetMatrixTransforms);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { setupInteractionListeners(); injectSkeletonPlaceholders(); loadInventoryPicker(); fetchObservationMatrix(); });
+    </script>
+</body>
+</html>
