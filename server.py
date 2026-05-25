@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("JWST-Chromatic-Backend")
 
-DB_NAME = "jwst_archive.db"
+DB_NAME = "/app/data/jwst_archive.db"
 
 app = FastAPI(
     title="JWST Chromatic Translation Discovery Engine",
