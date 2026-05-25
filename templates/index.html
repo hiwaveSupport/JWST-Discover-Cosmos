@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JWST Chromatic Translation Discovery Portal</title>
+    <title>JWST Advanced Semantic Exploration Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
     
@@ -24,7 +24,7 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row overflow-hidden">
 
     <script>
-        const API_BASE_URL = "http://localhost:8000";
+        const API_BASE_URL = window.location.origin;
     </script>
 
     <aside class="w-full md:w-1/4 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col gap-5 z-10 shadow-2xl overflow-y-auto">
@@ -42,13 +42,13 @@
             <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Unified Natural Search</label>
             <div class="relative flex items-center">
                 <span class="material-symbols-outlined absolute left-3 text-slate-500">search</span>
-                <input id="search-input" type="text" placeholder="Search plasma, crimson, dawn..." 
+                <input id="search-input" type="text" placeholder="Search plasma, organic, galaxies..." 
                        class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
             </div>
         </div>
 
         <div class="flex flex-col gap-2">
-            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Phenonema Filters</label>
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Semantic Phenonema Filters</label>
             <div class="flex flex-wrap gap-1.5" id="semantic-chips">
                 <button data-keyword="Plasma" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">✨ Plasma</button>
                 <button data-keyword="Organic" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">💨 Organics</button>
@@ -348,7 +348,6 @@
                 // Inject clean static interpretation text on demand
                 elements.modalColorInterpretation.innerText = COLOR_INTERPRETATIONS[state.activeColorName] || "Interpretation: Custom data layer mapping infrared frequencies.";
                 
-                // ✅ FIXED: Rogue elements.whyColor reference successfully removed to resolve runtime crashes
                 elements.modalWhyColor.innerText = `🎨 Chromatic Translation: To expose this invisible light to human eyes, the data has been transformed into a hardware-accelerated monochromatic ${state.activeColorName} spectrum glow based directly on its specific physical position within cosmic energy fields.`;
             }
         }
