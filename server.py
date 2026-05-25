@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 from PIL import Image
 import httpx
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import FastAPI, HTTPException, Query, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.templating import Jinja2Templates
@@ -19,21 +19,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger("JWST-Chromatic-Backend")
 
-#DB_NAME = "jwst_archive.db"
-# 1. Get the absolute path of the directory containing server.py
+# 1. Resolve absolute server execution directory coordinates
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 2. Dynamically look for the database file in that same directory
+# 2. Bind paths explicitly to guarantee target files locate correctly on remote cloud servers
 DB_NAME = os.path.join(BASE_DIR, "jwst_archive.db")
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 
 app = FastAPI(
     title="JWST Chromatic Translation Discovery Engine",
-    description="A non-blocking API featuring multi-column text lookups, explicit filter tracking, representative color vector data streaming, and live on-the-fly FITS processing paths.",
-    version="1.5.1"
+    description="A non-blocking API featuring unified multi-column text lookups, explicit filter tracking, representative color vector data streaming, and live on-the-fly FITS processing paths.",
+    version="1.6.0"
 )
 
-# FORCE it to look at your singular folder name
-templates = Jinja2Templates(directory="template")
+# Initialize Jinja2 Engine using bulletproof absolute path structures
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Enable CORS so your frontend layout (React/Next.js/HTML5) can communicate smoothly with this backend
 app.add_middleware(
@@ -61,12 +61,10 @@ def apply_astronomical_stretch(image_data: np.ndarray) -> np.ndarray:
     image_data = np.nan_to_num(image_data, nan=0.0, posinf=0.0, neginf=0.0)
     
     # 2. Extract boundaries eliminating top and bottom outliers (1st to 99.5th percentile)
-    # This ensures a single ultra-bright star doesn't turn the rest of a nebula pitch black
     vmin, vmax = np.percentile(image_data, [1.0, 99.5])
     clipped = np.clip(image_data, vmin, vmax)
     
     # 3. Execute Logarithmic non-linear stretching 
-    # This amplifies faint plasma clouds while smoothly compressing bright stellar cores
     stretched = np.log1p(clipped - vmin)
     
     # 4. Map cleanly across a standard 0-255 viewport scale
@@ -77,6 +75,20 @@ def apply_astronomical_stretch(image_data: np.ndarray) -> np.ndarray:
     normalized = (stretched - stretched.min()) / span
     return (normalized * 255).astype(np.uint8)
 
+
+# --- CORE FRONTEND TEMPLATE ROUTE ---
+
+@app.get("/")
+async def get_index(request: Request):
+    """
+    Serves the user interface portal directly from the server route.
+    Expects 'index.html' to be placed cleanly inside your adjacent /templates folder.
+    """
+    logger.info("Serving user portal matrix index template layout across root gateway.")
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+# --- API METADATA ENDPOINTS ---
 
 @app.get("/api/obs-inventory", response_model=List[Dict[str, Any]])
 def get_obs_inventory():
@@ -116,7 +128,6 @@ def get_observations(
     """
     Queries the local SQLite database cache to supply your Material Design grid layout 
     with dynamic filtering tracking multi-select lists, cross-column search tokens, or instrument sets.
-    Now includes color matrix indicator attributes.
     """
     logger.info(f"Metadata fetch requested. Filters -> Search: {search}, Multi-Select IDs: {obs_id}, Instrument: {instrument}")
     conn = get_db_connection()
@@ -139,7 +150,7 @@ def get_observations(
         clean_ids = [uid.strip() for uid in obs_id if uid.strip() != ""]
         if clean_ids:
             placeholders = ", ".join(["?"] * len(clean_ids))
-            query += f" AND obs_id IN ({placeholders})"  # <-- FIX: Typo successfully resolved here
+            query += f" AND obs_id IN ({placeholders})"
             params.extend(clean_ids)
         
     # 2. Four-Dimensional Fuzzy Text Search Mapping
@@ -207,6 +218,8 @@ def get_observations(
         conn.close()
 
 
+# --- FITS LIVE ARRAY STREAMING ENGINE ---
+
 @app.get("/api/stream/{obs_id}")
 async def stream_observation_image(obs_id: str, download: bool = Query(False)):
     """
@@ -216,7 +229,6 @@ async def stream_observation_image(obs_id: str, download: bool = Query(False)):
     """
     logger.info(f"🌌 Processing stream conversion pipeline for asset: {obs_id}")
     
-    # Step 1: Look up data path mappings from the local database
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT preview_url, target_name, product_filename FROM jwst_previews WHERE obs_id = ?", (obs_id,))
@@ -230,27 +242,20 @@ async def stream_observation_image(obs_id: str, download: bool = Query(False)):
     target_name = row["target_name"]
     filename = row["product_filename"]
     
-    # Step 2: Stream the scientific FITS binary payload from NASA MAST servers directly into memory
     async with httpx.AsyncClient() as client:
         try:
             logger.info(f" └── Fetching binary cluster from MAST cloud: {filename}")
-            # Request payload stream with an active 60 second network limit gateway
             response = await client.get(mast_url, timeout=60.0)
-            
             if response.status_code != 200:
                 logger.error(f"❌ MAST endpoint rejected image download hook. Status: {response.status_code}")
                 raise HTTPException(status_code=502, detail="Unable to retrieve data matrix from upstream space servers.")
-                
         except httpx.RequestError as exc:
             logger.error(f"❌ Network failure communicating with MAST: {str(exc)}")
             raise HTTPException(status_code=504, detail="Upstream space archive network request timeout.")
 
-    # Step 3: Parse FITS structures out of the memory buffer
     try:
         fits_buffer = io.BytesIO(response.content)
-        
         with fits.open(fits_buffer) as hdul:
-            # Isolate the core scientific 2D matrix layer array
             if "SCI" in hdul:
                 raw_pixels = hdul["SCI"].data
             else:
@@ -259,12 +264,10 @@ async def stream_observation_image(obs_id: str, download: bool = Query(False)):
             if raw_pixels is None or len(raw_pixels.shape) != 2:
                 raise ValueError("Target array data mapping structure does not match a recognizable 2D shape framework.")
                 
-            # Step 4: Execute our matrix math contrast-stretching functions
             processed_pixels = apply_astronomical_stretch(raw_pixels)
             
-            # Step 5: Serialize the processed NumPy grid array into a compressed PNG byte stream in RAM
             output_image_buffer = io.BytesIO()
-            img = Image.fromarray(processed_pixels, mode="L")  # Outfitted as a single channel high-depth grayscale image
+            img = Image.fromarray(processed_pixels, mode="L")
             img.save(output_image_buffer, format="PNG")
             output_image_buffer.seek(0)
             
@@ -272,10 +275,8 @@ async def stream_observation_image(obs_id: str, download: bool = Query(False)):
         logger.error(f"❌ Scientific matrix processing extraction failure: {str(err)}")
         raise HTTPException(status_code=500, detail="Failed to calculate matrix transformations on space asset data.")
 
-    # Step 6: Formulate response payload headers
     headers = {}
     if download:
-        # If frontend appends ?download=true, force the browser to execute a file save routine
         safe_target_name = "".join(c for c in target_name if c.isalnum() or c in (" ", "_", "-")).rstrip()
         headers["Content-Disposition"] = f'attachment; filename="JWST_{safe_target_name}_{obs_id}.png"'
     
