@@ -1,3 +1,4 @@
+import os
 import io
 import logging
 import sqlite3
@@ -9,6 +10,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.templating import Jinja2Templates
 
 # Configure clean, highly structured logging output
 logging.basicConfig(
@@ -17,13 +19,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger("JWST-Chromatic-Backend")
 
-DB_NAME = "/app/data/jwst_archive.db"
+#DB_NAME = "jwst_archive.db"
+# 1. Get the absolute path of the directory containing server.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Dynamically look for the database file in that same directory
+DB_NAME = os.path.join(BASE_DIR, "jwst_archive.db")
 
 app = FastAPI(
     title="JWST Chromatic Translation Discovery Engine",
     description="A non-blocking API featuring multi-column text lookups, explicit filter tracking, representative color vector data streaming, and live on-the-fly FITS processing paths.",
     version="1.5.1"
 )
+
+# FORCE it to look at your singular folder name
+templates = Jinja2Templates(directory="template")
 
 # Enable CORS so your frontend layout (React/Next.js/HTML5) can communicate smoothly with this backend
 app.add_middleware(
