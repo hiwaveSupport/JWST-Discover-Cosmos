@@ -19,6 +19,11 @@
             filter: brightness(0.01) contrast(3) blur(2px) !important;
             mix-blend-mode: normal !important;
         }
+
+        /* Responsive Webkit Focus Trims */
+        .color-glow-indicator {
+            box-shadow: 0 0 10px var(--indicator-glow, rgba(255, 255, 255, 0.2));
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col md:flex-row overflow-hidden">
@@ -27,7 +32,7 @@
         const API_BASE_URL = window.location.origin;
     </script>
 
-    <aside class="w-full md:w-1/4 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col gap-5 z-10 shadow-2xl overflow-y-auto">
+    <aside class="w-full md:w-1/4 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-6 flex flex-col gap-5 z-10 shadow-2xl overflow-y-auto shrink-0">
         <div>
             <h1 class="text-xl font-bold tracking-wide flex items-center gap-2 text-indigo-400">
                 <span class="material-symbols-outlined">rocket_launch</span>
@@ -42,18 +47,25 @@
             <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Unified Natural Search</label>
             <div class="relative flex items-center">
                 <span class="material-symbols-outlined absolute left-3 text-slate-500">search</span>
-                <input id="search-input" type="text" placeholder="Search plasma, organic, galaxies..." 
+                <input id="search-input" type="text" placeholder="Search plasma, crimson, dawn..." 
                        class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition-colors" />
             </div>
         </div>
 
         <div class="flex flex-col gap-2">
-            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Semantic Phenonema Filters</label>
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Semantic Phenomena Filters</label>
             <div class="flex flex-wrap gap-1.5" id="semantic-chips">
                 <button data-keyword="Plasma" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">✨ Plasma</button>
                 <button data-keyword="Organic" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">💨 Organics</button>
                 <button data-keyword="Dawn" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">🌌 Primordial Dawn</button>
                 <button data-keyword="Infancy" class="px-2.5 py-1 text-[11px] font-mono rounded-lg border border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700 transition-all">🪐 Star Embryos</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label class="text-xs font-medium uppercase tracking-wider text-slate-400">Target Taxonomy Filter</label>
+            <div id="classification-picker" class="max-h-36 overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-2 flex flex-col gap-1 text-xs">
+                <div class="text-slate-500 p-2 italic text-center animate-pulse">Syncing scientific taxonomy...</div>
             </div>
         </div>
 
@@ -97,7 +109,7 @@
                 <span class="inline-block w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span> Syncing Grid...
             </div>
         </header>
-        <div id="matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-12"></div>
+        <div id="matrix-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 pb-12"></div>
     </main>
 
     <div id="viewer-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xl z-50 hidden flex flex-col justify-between select-none p-4 md:p-6 transition-all duration-300">
@@ -106,7 +118,7 @@
             <button id="close-modal-btn" class="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-100 transition-colors font-medium self-start lg:self-auto">
                 <span class="material-symbols-outlined">arrow_back</span> Back to Grid
             </button>
-            <div class="text-center max-w-xl px-2 flex-1">
+            <div class="text-center max-w-xl px-2 flex-1 min-w-0">
                 <h3 id="modal-target-title" class="text-sm font-bold tracking-wide text-slate-100 uppercase truncate">TARGET ARCHIVE</h3>
                 <p id="modal-target-subtitle" class="text-xs text-indigo-400 font-mono mt-0.5 truncate">INSTRUMENT PARMS</p>
                 <p id="modal-target-proposal" class="text-[11px] text-slate-400 italic mt-0.5 truncate">PROPOSAL SUMMARY</p>
@@ -126,12 +138,10 @@
         </header>
 
         <div id="canvas-viewport" class="relative w-full flex-1 min-h-0 my-4 overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center rounded-2xl bg-black/20">
-            
             <div id="canvas-loader" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/40 z-20 backdrop-blur-md rounded-2xl">
                 <div class="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
                 <div class="text-xs font-mono text-slate-300 tracking-widest animate-pulse">STREAMING FITS CHANNELS...</div>
             </div>
-            
             <div id="image-transform-wrapper" class="origin-center transition-transform duration-75 will-change-transform relative">
                 <div id="gpu-blend-tint" class="absolute inset-0 z-10 pointer-events-none rounded transition-colors duration-300 mix-blend-screen"></div>
                 <img id="modal-image-node" src="" alt="Live FITS Projection" class="max-h-[50vh] max-w-[80vw] md:max-h-[55vh] object-contain pointer-events-none shadow-2xl transition-all duration-300 rounded" />
@@ -139,7 +149,6 @@
         </div>
 
         <footer class="bg-slate-900/60 backdrop-blur border border-slate-800/80 p-5 rounded-2xl flex flex-col gap-4 z-10 shadow-2xl">
-            
             <div id="modal-insight-banner" class="flex flex-col gap-1.5 text-center border-b border-slate-800/60 pb-3">
                 <span class="font-bold tracking-wider text-indigo-400 uppercase flex items-center justify-center gap-2 font-mono text-xs">
                     <span class="material-symbols-outlined text-sm">auto_awesome</span>
@@ -176,29 +185,79 @@
     </div>
 
     <script>
-        // Static dictionary lookup mapping raw color channels directly into digestible interpretations
-        const COLOR_INTERPRETATIONS = {
-            "Crimson": "Interpretation: Star Light & Surface Outlines. Sitting right on the boundary edge of human vision.",
-            "Red": "Interpretation: Stellar Nurseries. Pierces local space dust to show actively hatching newborn star clusters.",
-            "Orange": "Interpretation: Galaxy Skeletons. Maps mature stellar distributions obscured by cosmic clouds.",
-            "Gold": "Interpretation: Thermal Boundaries. Tracks chemical gas limits and frozen moisture layers on remote moons.",
-            "Green": "Interpretation: Organic Space Soot. Highlights complex hydrocarbon clouds glowing under radiation.",
-            "Teal": "Interpretation: Shockwave Displacements. Isolates fields where interstellar wind crashes into empty space.",
-            "Cyan": "Interpretation: Planetary Envelopes. Isolates methane and heavy carbon bounds in cold atmospheres.",
-            "Cerulean": "Interpretation: Cosmic Dawn. Specifically tunes into the oldest, most distant galaxies in the universe.",
-            "Sapphire": "Interpretation: Ambient Heat. Highlights carbon dust blankets absorbing active starcluster energy.",
-            "Indigo": "Interpretation: Searing Supernova Shockwaves. Maps silicate mineral streams and highly ionized plasma.",
-            "Violet": "Interpretation: Thermal Incubators. Deep star embryos cocooned in thick columns.",
-            "Magenta": "Interpretation: Cryogenic Freezing Void. Unveils cold asteroid tracks and cometary dust trails."
+        // State tracking vectors
+        let state = { 
+            search: '', 
+            instrument: '', 
+            minExposure: 0, 
+            selectedObsIds: [], 
+            selectedClassifications: [], 
+            allRecordsCache: [],
+            activeHex: '#FFFFFF',
+            activeColorName: 'Grayscale',
+            activeScientific: '',
+            activeAnalogy: ''
         };
-
-        let state = { search: '', instrument: '', minExposure: 0, selectedObsIds: [], allRecordsCache: [], currentViewportState: 'chromatic', activeHex: '#FFFFFF', activeColorName: 'Grayscale' };
+        
         let transformState = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 };
 
         const elements = {
-            searchInput: document.getElementById('search-input'), semanticChips: document.getElementById('semantic-chips'), obsIdPicker: document.getElementById('obs-id-picker'), instrumentChips: document.getElementById('instrument-chips'), exposureSlider: document.getElementById('exposure-slider'), exposureVal: document.getElementById('exposure-val'), matrixGrid: document.getElementById('matrix-grid'), loader: document.getElementById('loading-indicator'), statTotal: document.getElementById('stat-total'),
-            modal: document.getElementById('viewer-modal'), closeModal: document.getElementById('close-modal-btn'), modalTitle: document.getElementById('modal-target-title'), modalSubtitle: document.getElementById('modal-target-subtitle'), modalProposal: document.getElementById('modal-target-proposal'), modalFilterLabel: document.getElementById('modal-filter-label'), modalFilterDesc: document.getElementById('modal-filter-desc'), modalWhyColor: document.getElementById('modal-why-color'), modalColorBadge: document.getElementById('modal-color-badge'), modalColorInterpretation: document.getElementById('modal-color-interpretation'), gpuTint: document.getElementById('gpu-blend-tint'), modalImage: document.getElementById('modal-image-node'), canvasViewport: document.getElementById('canvas-viewport'), transformWrapper: document.getElementById('image-transform-wrapper'), canvasLoader: document.getElementById('canvas-loader'), downloadBtn: document.getElementById('download-trigger-btn'), zoomIn: document.getElementById('zoom-in-btn'), zoomOut: document.getElementById('zoom-out-btn'), zoomReset: document.getElementById('zoom-reset-btn')
+            searchInput: document.getElementById('search-input'), 
+            semanticChips: document.getElementById('semantic-chips'), 
+            obsIdPicker: document.getElementById('obs-id-picker'), 
+            classificationPicker: document.getElementById('classification-picker'), 
+            instrumentChips: document.getElementById('instrument-chips'), 
+            exposureSlider: document.getElementById('exposure-slider'), 
+            exposureVal: document.getElementById('exposure-val'), 
+            matrixGrid: document.getElementById('matrix-grid'), 
+            loader: document.getElementById('loading-indicator'), 
+            statTotal: document.getElementById('stat-total'),
+            modal: document.getElementById('viewer-modal'), 
+            closeModal: document.getElementById('close-modal-btn'), 
+            modalTitle: document.getElementById('modal-target-title'), 
+            modalSubtitle: document.getElementById('modal-target-subtitle'), 
+            modalProposal: document.getElementById('modal-target-proposal'), 
+            modalFilterLabel: document.getElementById('modal-filter-label'), 
+            modalFilterDesc: document.getElementById('modal-filter-desc'), 
+            modalWhyColor: document.getElementById('modal-why-color'), 
+            modalColorBadge: document.getElementById('modal-color-badge'), 
+            modalColorInterpretation: document.getElementById('modal-color-interpretation'), 
+            gpuTint: document.getElementById('gpu-blend-tint'), 
+            modalImage: document.getElementById('modal-image-node'), 
+            canvasViewport: document.getElementById('canvas-viewport'), 
+            transformWrapper: document.getElementById('image-transform-wrapper'), 
+            canvasLoader: document.getElementById('canvas-loader'), 
+            downloadBtn: document.getElementById('download-trigger-btn'), 
+            zoomIn: document.getElementById('zoom-in-btn'), 
+            zoomOut: document.getElementById('zoom-out-btn'), 
+            zoomReset: document.getElementById('zoom-reset-btn')
         };
+
+        /**
+         * Parses the multi-line impact description directly out of the SQL cache payload.
+         */
+        function parseImpactDescription(rawDescription) {
+            const result = { scientific: "Specialized space light filtration data array layer.", analogy: "Data stream mapped across specialized filtration." };
+            if (!rawDescription) return result;
+
+            const targetMarker = "[Scientific Target]:";
+            const analogyMarker = "[Intuitive Terrestrial Analogy]:";
+
+            const lines = rawDescription.split('\n');
+            lines.forEach(line => {
+                if (line.includes(targetMarker)) {
+                    result.scientific = line.replace(targetMarker, '').trim();
+                } else if (line.includes(analogyMarker)) {
+                    result.analogy = line.replace(analogyMarker, '').trim();
+                }
+            });
+
+            if (result.scientific === "Specialized space light filtration data array layer." && !rawDescription.includes(targetMarker)) {
+                result.scientific = rawDescription;
+            }
+
+            return result;
+        }
 
         function injectSkeletonPlaceholders() {
             elements.matrixGrid.innerHTML = '';
@@ -234,12 +293,49 @@
             } catch (err) { elements.obsIdPicker.innerHTML = '<div class="text-rose-500/70 p-2 text-center text-[11px]">Failed inventory map.</div>'; }
         }
 
+        async function loadClassificationPicker() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/classifications`);
+                if (!response.ok) throw new Error("Scientific taxonomies endpoint unreachable.");
+                const items = await response.json();
+                
+                elements.classificationPicker.innerHTML = '';
+                if (items.length === 0) {
+                    elements.classificationPicker.innerHTML = '<div class="text-slate-600 p-2 text-center italic">No classifications found</div>';
+                    return;
+                }
+                
+                items.forEach(category => {
+                    elements.classificationPicker.insertAdjacentHTML('beforeend', `
+                        <label class="flex items-center gap-2 p-1.5 hover:bg-slate-800/60 rounded-lg cursor-pointer transition-colors text-slate-300 hover:text-slate-100 select-none">
+                            <input type="checkbox" value="${category}" class="class-checkbox accent-indigo-500 rounded bg-slate-900 border-slate-700" />
+                            <span class="truncate uppercase text-[10px] tracking-wide font-medium text-slate-300">${category}</span>
+                        </label>
+                    `);
+                });
+
+                elements.classificationPicker.querySelectorAll('.class-checkbox').forEach(box => {
+                    box.addEventListener('change', () => {
+                        state.selectedClassifications = Array.from(elements.classificationPicker.querySelectorAll('.class-checkbox:checked')).map(cb => cb.value);
+                        injectSkeletonPlaceholders(); 
+                        fetchObservationMatrix();
+                    });
+                });
+            } catch (err) {
+                console.error("Classification metadata fetching error:", err);
+                elements.classificationPicker.innerHTML = '<div class="text-rose-500/70 p-2 text-center text-[11px]">Failed taxonomy synchronization.</div>';
+            }
+        }
+
         async function fetchObservationMatrix() {
             elements.loader.classList.remove('hidden');
             const params = new URLSearchParams({ limit: 100, offset: 0 });
             if (state.search) params.append('search', state.search);
             if (state.instrument) params.append('instrument', state.instrument);
             if (state.selectedObsIds.length > 0) state.selectedObsIds.forEach(id => params.append('obs_id', id));
+            if (state.selectedClassifications.length > 0) {
+                state.selectedClassifications.forEach(cls => params.append('classification', cls));
+            }
             
             try {
                 const response = await fetch(`${API_BASE_URL}/api/observations?${params.toString()}`);
@@ -250,6 +346,9 @@
             elements.loader.classList.add('hidden');
         }
 
+        /**
+         * Renders the filtered discovery cards matching your advanced design structures.
+         */
         function renderFilteredMatrix() {
             const filtered = state.allRecordsCache.filter(item => item.exposure_time >= state.minExposure);
             elements.statTotal.innerText = filtered.length;
@@ -260,32 +359,56 @@
                 const hexColor = obs.primary_color_hex || '#FFFFFF';
                 const colorName = obs.primary_color_name || 'Grayscale';
                 const humanLabel = obs.filter_human_label || `Infrared (${obs.filters})`;
+                const descriptions = parseImpactDescription(obs.impact_description);
 
-                elements.matrixGrid.insertAdjacentHTML('beforeend', `
-                    <div class="group bg-slate-900 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/30 rounded-2xl p-5 flex flex-col justify-between gap-3 transition-all hover:shadow-xl cursor-pointer" onclick="launchExpandedViewer('${obs.obs_id}')">
-                        <div class="flex justify-between items-start gap-3">
-                            <div class="min-w-0 flex-1">
-                                <h3 class="font-bold text-slate-100 group-hover:text-indigo-400 transition-colors truncate">${obs.target_name}</h3>
-                                <p class="text-[10px] text-indigo-400 font-mono tracking-tight uppercase truncate">${obs.target_classification}</p>
+                const cardHtml = `
+                    <div class="group bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl flex flex-col justify-between overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl cursor-pointer" 
+                         onclick="launchExpandedViewer('${obs.obs_id}')"
+                         style="--card-glow-color: ${hexColor}">
+                        
+                        <div class="p-5 flex flex-col gap-4 flex-grow">
+                            <div class="flex justify-between items-start gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="font-bold text-slate-100 group-hover:text-indigo-400 transition-colors truncate text-base">${obs.target_name}</h3>
+                                    <p class="text-[10px] text-indigo-400 font-mono tracking-tight uppercase truncate mt-0.5">${obs.target_classification}</p>
+                                </div>
+                                <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md border border-slate-700 bg-slate-950 text-slate-400 shrink-0">${obs.instrument_name.split('/')[0]}</span>
                             </div>
-                            <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full border border-slate-700 bg-slate-950 text-slate-400 shrink-0">${obs.instrument_name.split('/')[0]}</span>
+
+                            <div class="flex flex-col gap-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-mono">Scientific Focus</span>
+                                <p class="text-xs text-slate-300 leading-relaxed pl-3 border-l-2 border-slate-700 group-hover:border-indigo-500 transition-colors line-clamp-3">
+                                    ${descriptions.scientific}
+                                </p>
+                            </div>
+
+                            <p class="text-xs text-slate-400 line-clamp-2 italic leading-relaxed mt-1">"${obs.observation_title}"</p>
                         </div>
                         
-                        <div class="text-[11px] font-medium bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1.5 truncate">
-                                <span class="w-2.5 h-2.5 rounded-full shrink-0 border border-white/10" style="background-color: ${hexColor}"></span>
-                                <span class="truncate">${humanLabel}</span>
+                        <div class="px-5 py-3.5 bg-slate-950/50 border-t border-slate-800/80 flex gap-2.5 items-start">
+                            <div class="color-glow-indicator w-3 h-3 rounded-full shrink-0 mt-1 border border-white/20" 
+                                 style="background-color: ${hexColor}; --indicator-glow: ${hexColor}"></div>
+                            <div class="text-[11px] leading-snug text-slate-300">
+                                <span class="font-bold mr-1" style="color: ${hexColor}">${colorName}:</span>
+                                ${descriptions.analogy}
                             </div>
-                            <span class="text-[9px] font-mono font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800/50">${colorName}</span>
-                        </div>
-
-                        <p class="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">"${obs.observation_title}"</p>
-                        
-                        <div class="mt-1 w-full py-2 bg-slate-950 group-hover:bg-indigo-600 rounded-xl text-center text-[11px] font-medium tracking-wider uppercase text-slate-400 group-hover:text-white transition-all flex items-center justify-center gap-1.5 border border-slate-800">
-                            <span class="material-symbols-outlined text-sm">visibility</span> Inspect Viewports
                         </div>
                     </div>
-                `);
+                `;
+                elements.matrixGrid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // Re-apply hover shadow bindings via explicit Javascript loop triggers
+            document.querySelectorAll('#matrix-grid .group').forEach(card => {
+                const hex = card.getAttribute('style').split(':').pop().trim();
+                card.addEventListener('mouseenter', () => {
+                    card.style.borderColor = hex;
+                    card.style.boxShadow = `0 10px 20px -5px ${hex}15`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.borderColor = 'rgb(30, 41, 59)';
+                    card.style.boxShadow = 'none';
+                });
             });
         }
 
@@ -300,8 +423,12 @@
             
             state.activeHex = obs.primary_color_hex || '#FFFFFF';
             state.activeColorName = obs.primary_color_name || 'Grayscale';
+            
+            const descriptions = parseImpactDescription(obs.impact_description);
+            state.activeScientific = descriptions.scientific;
+            state.activeAnalogy = descriptions.analogy;
+
             elements.modalFilterLabel.innerText = obs.filter_human_label || `Infrared Spectrum (${obs.filters})`;
-            elements.modalFilterDesc.innerText = obs.impact_description || "Specialized space light filtration data array layer.";
             
             elements.downloadBtn.href = `${API_BASE_URL}/api/stream/${obsId}?download=true`;
             resetMatrixTransforms();
@@ -334,10 +461,12 @@
                 elements.modalColorBadge.style.backgroundColor = '#020617';
                 elements.modalColorBadge.innerText = 'INVISIBLE';
                 elements.modalColorInterpretation.innerText = "Switch to 'Chromatic Glow' to access chemical interpretation maps.";
+                elements.modalFilterDesc.innerText = "Human ocular limitations prevent the tracking of waves outside the thin visible border layer.";
                 elements.modalWhyColor.innerText = "🛑 Human Eye Perspective: Because the human retina lacks cells sensitive to wavelengths longer than 0.78 microns, this deep-space structure appears entirely pitch black and completely invisible to an astronaut.";
             } 
             else if (targetState === 'scientific') {
                 elements.modalColorInterpretation.innerText = "Switch to 'Chromatic Glow' to access chemical interpretation maps.";
+                elements.modalFilterDesc.innerText = state.activeScientific;
                 elements.modalWhyColor.innerText = "🔬 Scientific Intensity Map: Computers do not read color—they read math. This baseline view maps photon count values straight to pixel brightness levels, tracking structural density with absolute precision.";
             } 
             else if (targetState === 'chromatic') {
@@ -345,9 +474,11 @@
                 elements.modalColorBadge.style.backgroundColor = state.activeHex;
                 elements.modalColorBadge.innerText = state.activeColorName;
                 
-                // Inject clean static interpretation text on demand
-                elements.modalColorInterpretation.innerText = COLOR_INTERPRETATIONS[state.activeColorName] || "Interpretation: Custom data layer mapping infrared frequencies.";
-                
+                elements.modalColorInterpretation.innerHTML = `
+                    <span class="font-bold uppercase mr-1" style="color: ${state.activeHex}">${state.activeColorName}:</span> 
+                    ${state.activeAnalogy}
+                `;
+                elements.modalFilterDesc.innerText = state.activeScientific;
                 elements.modalWhyColor.innerText = `🎨 Chromatic Translation: To expose this invisible light to human eyes, the data has been transformed into a hardware-accelerated monochromatic ${state.activeColorName} spectrum glow based directly on its specific physical position within cosmic energy fields.`;
             }
         }
@@ -403,7 +534,13 @@
             elements.zoomReset.addEventListener('click', resetMatrixTransforms);
         }
 
-        document.addEventListener('DOMContentLoaded', () => { setupInteractionListeners(); injectSkeletonPlaceholders(); loadInventoryPicker(); fetchObservationMatrix(); });
+        document.addEventListener('DOMContentLoaded', () => { 
+            setupInteractionListeners(); 
+            injectSkeletonPlaceholders(); 
+            loadClassificationPicker();   
+            loadInventoryPicker(); 
+            fetchObservationMatrix(); 
+        });
     </script>
 </body>
 </html>
