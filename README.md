@@ -1,11 +1,4 @@
-```python
-readme_content = """# 🚀 JWST Chromatic Translation & Discovery Engine
-
-[![FastAPI Engine](https://img.shields.io/badge/API-FastAPI%200.110+-indigo.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
-[![Astrophysics Core](https://img.shields.io/badge/Astro-Astropy%206.0--violet.svg?style=for-the-badge&logo=nasa)](https://www.astropy.org)
-[![Tailwind Client](https://img.shields.io/badge/UI-Tailwind%20CSS%203--cyan.svg?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com)
-[![Deployment Layer](https://img.shields.io/badge/Cloud-Railway%20Optimized-green.svg?style=for-the-badge&logo=railway)](https://railway.app)
-
+```text
 Welcome, star-sailor and code-architect.
 This repository houses the **JWST Chromatic Translation & Discovery Engine**—a multi-layered, non-blocking asynchronous pipeline designed to ingest raw scientific instruments data from NASA's Mikulski Archive for Space Telescopes (MAST), transform high-dynamic-range Flexible Image Transport System (FITS) float matrices in RAM, map deep background galactic environments via international telemetry catalogs, and serve an interactive glassmorphic web dashboard that exposes the invisible infrared universe.
 This isn't an image-scraping script; it is a **Cosmic Time Machine and Optical Matrix Decoder** running on an offline-first SQLite synchronization engine.
@@ -16,8 +9,6 @@ This isn't an image-scraping script; it is a **Cosmic Time Machine and Optical M
 
 
 ```
-
-```text
 File successfully created inside sandbox.
 
 
